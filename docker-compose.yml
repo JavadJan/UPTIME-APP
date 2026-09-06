@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-uptime}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uptime}
+      POSTGRES_DB: ${POSTGRES_DB:-uptime}
+    ports:
+      - '${POSTGRES_HOST_PORT:-5433}:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-uptime}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-uptime}:${POSTGRES_PASSWORD:-uptime}@db:5432/${POSTGRES_DB:-uptime}
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the browser bundle at build time - must be reachable
+        # from the browser, so localhost:3000, not "backend" (that's only
+        # resolvable inside the Docker network).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+    restart: unless-stopped
+    ports:
+      - '3001:3000'
+    depends_on:
+      - backend
+
+volumes:
+  db-data:

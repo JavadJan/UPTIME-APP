@@ -1,0 +1,57 @@
+// This now targets Postgres, matching the "db" service in docker-compose.yml.
+// If you ever want to go back to zero-setup local SQLite (e.g. for quick
+// experiments without Docker), change provider back to "sqlite" and point
+// DATABASE_URL at a file, e.g. "file:./dev.db" - nothing else changes.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  createdAt DateTime  @default(now())
+  monitors  Monitor[]
+}
+
+model Monitor {
+  id            String        @id @default(uuid())
+  name          String
+  url           String
+  intervalSecs  Int           @default(60)
+  timeoutMs     Int           @default(5000)
+  isActive      Boolean       @default(true)
+  lastStatus    String        @default("UNKNOWN")
+  lastCheckedAt DateTime?
+  createdAt     DateTime      @default(now())
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  checks        CheckResult[]
+  alerts        AlertLog[]
+}
+
+model CheckResult {
+  id           String        @id @default(uuid())
+  monitorId    String
+  monitor      Monitor       @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  status       String
+  statusCode   Int?
+  responseMs   Int?
+  errorMessage String?
+  checkedAt    DateTime      @default(now())
+
+  @@index([monitorId, checkedAt])
+}
+
+model AlertLog {
+  id          String   @id @default(uuid())
+  monitorId   String
+  monitor     Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  fromStatus  String
+  toStatus    String
+  sentAt      DateTime @default(now())
+}

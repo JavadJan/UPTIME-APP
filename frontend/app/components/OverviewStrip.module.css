@@ -1,0 +1,32 @@
+.strip {
+  display: flex;
+  gap: 28px;
+}
+
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.stat[data-tone='up'] .value {
+  color: var(--up);
+}
+.stat[data-tone='down'] .value {
+  color: var(--down);
+}
+
+.label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
