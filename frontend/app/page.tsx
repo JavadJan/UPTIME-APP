@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { api } from './lib/api';
+import { useRouter } from 'next/navigation';
+import { api, clearToken, getToken } from './lib/api';
 import { Monitor } from './lib/types';
 import { OverviewStrip } from './components/OverviewStrip';
 import { MonitorCard } from './components/MonitorCard';
@@ -11,8 +12,10 @@ import styles from './page.module.css';
 const POLL_MS = 10_000;
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [monitors, setMonitors] = useState<Monitor[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const refresh = useCallback(() => {
     api
@@ -25,10 +28,30 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.replace('/auth');
+      return;
+    }
+
+    setCheckingAuth(false);
     refresh();
     const id = setInterval(refresh, POLL_MS);
     return () => clearInterval(id);
-  }, [refresh]);
+  }, [refresh, router]);
+
+  function handleLogout() {
+    clearToken();
+    router.replace('/auth');
+  }
+
+  if (checkingAuth) {
+    return (
+      <main className={styles.main}>
+        <div className={styles.loading}>Checking session…</div>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.main}>
@@ -37,7 +60,12 @@ export default function DashboardPage() {
           <h1 className={styles.title}>Pulse</h1>
           <p className={styles.subtitle}>Know the moment something goes down.</p>
         </div>
-        {monitors && monitors.length > 0 && <OverviewStrip monitors={monitors} />}
+        <div className={styles.headerActions}>
+          {monitors && monitors.length > 0 && <OverviewStrip monitors={monitors} />}
+          <button type="button" className={styles.logoutButton} onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
       </header>
 
       {error && (

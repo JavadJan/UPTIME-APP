@@ -14,8 +14,8 @@ generator client {
 model User {
   id        String    @id @default(uuid())
   email     String    @unique
+  password   String    @default("")
   createdAt DateTime  @default(now())
-  monitors  Monitor[]
 }
 
 model Monitor {
@@ -28,8 +28,7 @@ model Monitor {
   lastStatus    String        @default("UNKNOWN")
   lastCheckedAt DateTime?
   createdAt     DateTime      @default(now())
-  userId        String?
-  user          User?         @relation(fields: [userId], references: [id])
+  userId        String        @default("00000000-0000-0000-0000-000000000001")
   checks        CheckResult[]
   alerts        AlertLog[]
 }
